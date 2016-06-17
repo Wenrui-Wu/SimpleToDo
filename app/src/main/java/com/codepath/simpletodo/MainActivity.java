@@ -1,5 +1,6 @@
 package com.codepath.simpletodo;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -20,6 +21,10 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter<String> itemsAdapter;
     ListView lvItems;
 
+    // REQUEST_CODE can be any value we like, used to determine the result type later
+    private final int REQUEST_CODE = 20;
+    private int currPos = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,16 +37,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupListViewListener() {
-        lvItems.setOnItemLongClickListener(
-                new AdapterView.OnItemLongClickListener() {
+        lvItems.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-                    public boolean onItemLongClick(AdapterView<?> adapter, View item, int pos, long id) {
-                        items.remove(pos);
-                        itemsAdapter.notifyDataSetChanged();
-                        writeItems();
-                        return true;
-                    }
-                });
+            public boolean onItemLongClick(AdapterView<?> adapter, View item, int pos, long id) {
+                items.remove(pos);
+                itemsAdapter.notifyDataSetChanged();
+                writeItems();
+                return true;
+            }
+        });
+
+        lvItems.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> adapter, View item, int pos, long id) {
+                // first parameter is the context, second is the class of the activity to launch
+                Intent i = new Intent(MainActivity.this, EditItemActivity.class);
+                // put "extras" into the bundle for access in the second activity
+                currPos = pos;
+                i.putExtra("itemText", items.get(pos).toString());
+                startActivityForResult(i, REQUEST_CODE); // brings up the second activity
+            }
+        });
     }
 
     private void readItems() {
@@ -72,5 +87,18 @@ public class MainActivity extends AppCompatActivity {
         itemsAdapter.add(itemText);
         etNewItem.setText("");
         writeItems();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // REQUEST_CODE is defined above
+        if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
+            // Extract name value from result extras
+            String newItemText = data.getExtras().getString("newItemText");
+            items.remove(currPos);
+            items.add(currPos, newItemText);
+            itemsAdapter.notifyDataSetChanged();
+            writeItems();
+        }
     }
 }
